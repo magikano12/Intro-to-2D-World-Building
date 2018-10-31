@@ -4,30 +4,113 @@ using UnityEngine;
 
 public class Move : MonoBehaviour
 {
-    public float speed;             //Floating point variable to store the player's movement speed.
+    [SerializeField]
+    private int lives = 3;
 
-    private Rigidbody2D rb2d;       //Store a reference to the Rigidbody2D component required to use 2D Physics.
+    [SerializeField]
+    private string name = "Mario";
+
+    [SerializeField]
+    private float jumpHeight = 5;
+
+    [SerializeField]
+    private float accelerationForce = 5;
+
+    [SerializeField]
+    private float maxSpeed = 5;
+
+    [SerializeField]
+    private float jumpForce = 10;
+
+    private bool hasKey;
+
+    private bool isOnGround;
+
+    [SerializeField]
+    private Rigidbody2D rigidbody2DInstance;
+
+    private float horizontalInput;
+
+    [SerializeField]
+    private ContactFilter2D groundContactFilter;
+
+    [SerializeField]
+    private Collider2D groundDetectTrigger;
+
+    private Collider2D[] groundHitDetectionResults = new Collider2D[16];
+
+    [SerializeField]
+    private PhysicsMaterial2D playerMovingPhysicsMaterial, playerStoppingPhysicsMaterial;
+
+    [SerializeField]
+    private Collider2D playerGroundCollider;
+
+    //private Checkpoint currentCheckpoint;
 
     // Use this for initialization
     void Start()
     {
-        //Get and store a reference to the Rigidbody2D component so that we can access it.
-        rb2d = GetComponent<Rigidbody2D>();
+        rigidbody2DInstance = GetComponent<Rigidbody2D>();
+        Debug.Log("Rawr");  //How to print to the console in Unity
+        string pizza = "yum";
+        Debug.Log(pizza);
     }
 
-    //FixedUpdate is called at a fixed interval and is independent of frame rate. Put physics code here.
-    void FixedUpdate()
+    // Update is called once per frame
+    private void Update()
     {
-        //Store the current horizontal input in the float moveHorizontal.
-        float moveHorizontal = Input.GetAxis("Horizontal");
+        //transform.Translate(0, -.01f, 0); don't use because of physics
+        //GetInput();
+        UpdateIsOnGround();
+        UpdateHorizontalInput();
+        HandleJumpInput();
 
-        //Store the current vertical input in the float moveVertical.
-        float moveVertical = Input.GetAxis("Vertical");
+    }
 
-        //Use the two store floats to create a new Vector2 variable movement.
-        Vector2 movement = new Vector2(moveHorizontal, moveVertical);
+    private void FixedUpdate()
+    {
+        UpdatePhysicsMaterial();
+        Movement();
+    }
 
-        //Call the AddForce function of our Rigidbody2D rb2d supplying movement multiplied by speed to move our player.
-        rb2d.AddForce(movement * speed);
+    private void UpdatePhysicsMaterial()
+    {
+        if (Mathf.Abs(horizontalInput) > 0)
+        {
+            playerGroundCollider.sharedMaterial = playerMovingPhysicsMaterial;
+        }
+
+        else
+        {
+            playerGroundCollider.sharedMaterial = playerStoppingPhysicsMaterial;
+        }
+    }
+
+    private void UpdateIsOnGround()
+    {
+        isOnGround = groundDetectTrigger.OverlapCollider(groundContactFilter, groundHitDetectionResults) > 0;
+        //Debug.Log("IsOnGround?: " + isOnGround);
+    }
+
+    private void UpdateHorizontalInput()
+    {
+        horizontalInput = Input.GetAxisRaw("Horizontal");
+    }
+
+    private void HandleJumpInput()
+    {
+        if (Input.GetButtonDown("Jump") && isOnGround)
+        {
+            rigidbody2DInstance.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        }
+    }
+
+    private void Movement()
+    {
+
+        rigidbody2DInstance.AddForce(Vector2.right * horizontalInput * accelerationForce);
+        Vector2 clampedVelocity = rigidbody2DInstance.velocity;
+        clampedVelocity.x = Mathf.Clamp(rigidbody2DInstance.velocity.x, -maxSpeed, maxSpeed);
+        rigidbody2DInstance.velocity = clampedVelocity;
     }
 }
